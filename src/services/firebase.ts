@@ -2,6 +2,7 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import type { FirebaseClientConfig } from '../types';
+import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig';
 
 export enum OperationType {
   CREATE = 'create',
@@ -82,15 +83,7 @@ export function initFirebase() {
   if (app) return { app, db, auth };
 
   const storedConfig = getStoredFirebaseConfig();
-  const config = storedConfig || {
-    apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || '',
-    authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || '',
-    storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID || '',
-    firestoreDatabaseId: (import.meta as any).env?.VITE_FIREBASE_DATABASE_ID || '(default)',
-  };
+  const config = storedConfig || DEFAULT_FIREBASE_CONFIG;
 
   if (config.apiKey && config.projectId) {
     try {

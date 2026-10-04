@@ -5,6 +5,7 @@ import {
   saveStoredFirebaseConfig,
   isFirebaseConfigured,
 } from '../services/firebase';
+import { DEFAULT_FIREBASE_CONFIG } from '../services/firebaseConfig';
 import type { FirebaseClientConfig } from '../types';
 
 interface FirebaseConfigModalProps {
@@ -13,18 +14,18 @@ interface FirebaseConfigModalProps {
 }
 
 export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen, onClose }) => {
-  const current = getStoredFirebaseConfig();
+  const current = getStoredFirebaseConfig() || DEFAULT_FIREBASE_CONFIG;
   const isConfigured = isFirebaseConfigured();
 
   const [rawJson, setRawJson] = useState('');
-  const [apiKey, setApiKey] = useState(current?.apiKey || '');
-  const [authDomain, setAuthDomain] = useState(current?.authDomain || '');
-  const [projectId, setProjectId] = useState(current?.projectId || '');
-  const [storageBucket, setStorageBucket] = useState(current?.storageBucket || '');
-  const [messagingSenderId, setMessagingSenderId] = useState(current?.messagingSenderId || '');
-  const [appId, setAppId] = useState(current?.appId || '');
+  const [apiKey, setApiKey] = useState(current.apiKey || '');
+  const [authDomain, setAuthDomain] = useState(current.authDomain || '');
+  const [projectId, setProjectId] = useState(current.projectId || '');
+  const [storageBucket, setStorageBucket] = useState(current.storageBucket || '');
+  const [messagingSenderId, setMessagingSenderId] = useState(current.messagingSenderId || '');
+  const [appId, setAppId] = useState(current.appId || '');
   const [firestoreDatabaseId, setFirestoreDatabaseId] = useState(
-    current?.firestoreDatabaseId || '(default)'
+    current.firestoreDatabaseId || '(default)'
   );
 
   const [jsonError, setJsonError] = useState<string | null>(null);
