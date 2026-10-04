@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email in ['aersews@gmail.com', 'admin@startupjunction.in']
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Applications collection: Public submissions allowed, reads and updates restricted strictly to Admins
+    match /applications/{applicationId} {
+      allow get, list: if isAdmin();
+
+      allow create: if isValidId(applicationId) &&
+        request.resource.data.fullName is string &&
+        request.resource.data.fullName.size() > 0 &&
+        request.resource.data.fullName.size() <= 100 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() <= 150 &&
+        request.resource.data.whatsapp is string &&
+        request.resource.data.whatsapp.size() <= 20 &&
+        request.resource.data.status == 'NEW';
+
+      allow update, delete: if isAdmin();
+
+      // Subcollection for internal admin notes
+      match /notes/{noteId} {
+        allow read, write: if isAdmin();
+      }
+
+      // Subcollection for internal admin reviews
+      match /review/{reviewId} {
+        allow read, write: if isAdmin();
+      }
+
+      // Subcollection for internal activity logs
+      match /activity/{activityId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

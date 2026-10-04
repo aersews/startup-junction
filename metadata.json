@@ -1,0 +1,6 @@
+{
+  "name": "Startup Junction",
+  "description": "Startup Junction helps students and aspiring founders turn ideas into real products, teams and startups through mentorship, guidance, team building and practical support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

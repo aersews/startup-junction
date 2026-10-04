@@ -1,0 +1,300 @@
+{
+  "entities": {
+    "Application": {
+      "title": "Application",
+      "description": "Applicant submission containing founder details, education, skills, startup idea, and support needs",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique application ID starting with SJ-"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the applicant",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the applicant",
+          "maxLength": 150
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp contact number with country code",
+          "maxLength": 20
+        },
+        "city": {
+          "type": "string",
+          "description": "City of residence",
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "description": "State of residence",
+          "maxLength": 100
+        },
+        "linkedin": {
+          "type": "string",
+          "description": "LinkedIn profile URL (optional)",
+          "maxLength": 250
+        },
+        "portfolio": {
+          "type": "string",
+          "description": "GitHub or portfolio link (optional)",
+          "maxLength": 250
+        },
+        "college": {
+          "type": "string",
+          "description": "College or university name",
+          "maxLength": 200
+        },
+        "degree": {
+          "type": "string",
+          "description": "Degree enrolled or completed",
+          "maxLength": 100
+        },
+        "branch": {
+          "type": "string",
+          "description": "Branch or specialization",
+          "maxLength": 100
+        },
+        "currentYear": {
+          "type": "string",
+          "description": "Current academic year or status",
+          "maxLength": 50
+        },
+        "currentSemester": {
+          "type": "string",
+          "description": "Current semester if applicable",
+          "maxLength": 50
+        },
+        "expectedGraduationYear": {
+          "type": "string",
+          "description": "Expected year of graduation",
+          "maxLength": 10
+        },
+        "technicalSkills": {
+          "type": "array",
+          "description": "Selected technical skills"
+        },
+        "businessCreativeSkills": {
+          "type": "array",
+          "description": "Selected business and creative skills"
+        },
+        "projectsBuilt": {
+          "type": "string",
+          "description": "Description of past projects or work",
+          "maxLength": 3000
+        },
+        "previousExperience": {
+          "type": "string",
+          "description": "Past work or leadership experience",
+          "maxLength": 3000
+        },
+        "ideaStatus": {
+          "type": "string",
+          "description": "Idea availability status",
+          "maxLength": 100
+        },
+        "ideaTitle": {
+          "type": "string",
+          "description": "Title or summary of idea",
+          "maxLength": 300
+        },
+        "problemStatement": {
+          "type": "string",
+          "description": "What problem is being solved",
+          "maxLength": 3000
+        },
+        "targetUsers": {
+          "type": "string",
+          "description": "Who experiences this problem",
+          "maxLength": 2000
+        },
+        "solutionDescription": {
+          "type": "string",
+          "description": "How the solution works",
+          "maxLength": 3000
+        },
+        "stage": {
+          "type": "string",
+          "description": "Current stage of the idea",
+          "maxLength": 100
+        },
+        "teamStatus": {
+          "type": "string",
+          "description": "Team setup status",
+          "maxLength": 100
+        },
+        "needs": {
+          "type": "array",
+          "description": "Areas where help is requested"
+        },
+        "seriousness": {
+          "type": "string",
+          "description": "Applicant commitment level",
+          "maxLength": 100
+        },
+        "timeCommitment": {
+          "type": "string",
+          "description": "Hours per week applicant can commit",
+          "maxLength": 100
+        },
+        "motivation": {
+          "type": "string",
+          "description": "Why the applicant wants to build this",
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "description": "Application pipeline status",
+          "enum": [
+            "NEW",
+            "UNDER_REVIEW",
+            "CONTACTED",
+            "DISCUSSION",
+            "SELECTED",
+            "ONBOARDING",
+            "BUILDING",
+            "LAUNCHED",
+            "ON_HOLD",
+            "REJECTED"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "email",
+        "whatsapp",
+        "city",
+        "state",
+        "college",
+        "status"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator record",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address"
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrator role",
+          "enum": ["admin", "superadmin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["email", "role"]
+    },
+    "ApplicationNote": {
+      "title": "ApplicationNote",
+      "description": "Internal note created by an admin",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Note ID"
+        },
+        "authorEmail": {
+          "type": "string",
+          "description": "Author email"
+        },
+        "content": {
+          "type": "string",
+          "description": "Note content",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["id", "authorEmail", "content", "createdAt"]
+    },
+    "ApplicationReview": {
+      "title": "ApplicationReview",
+      "description": "Internal assessment rating matrix by an admin",
+      "type": "object",
+      "properties": {
+        "founderPotential": {
+          "type": "number",
+          "description": "Score 1-5"
+        },
+        "problemStrength": {
+          "type": "number",
+          "description": "Score 1-5"
+        },
+        "marketPotential": {
+          "type": "number",
+          "description": "Score 1-5"
+        },
+        "technicalFeasibility": {
+          "type": "number",
+          "description": "Score 1-5"
+        },
+        "commitment": {
+          "type": "number",
+          "description": "Score 1-5"
+        },
+        "overallAssessment": {
+          "type": "string",
+          "description": "Overall evaluation text",
+          "maxLength": 3000
+        },
+        "internalNotes": {
+          "type": "string",
+          "description": "Internal reviewer notes",
+          "maxLength": 3000
+        },
+        "nextAction": {
+          "type": "string",
+          "description": "Recommended next action",
+          "maxLength": 1000
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last evaluation timestamp"
+        },
+        "reviewedBy": {
+          "type": "string",
+          "description": "Admin email who performed the review"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/applications/{applicationId}": {
+      "schema": "#/entities/Application",
+      "description": "Stores applicant submissions"
+    },
+    "/applications/{applicationId}/notes/{noteId}": {
+      "schema": "#/entities/ApplicationNote",
+      "description": "Internal admin notes on an application"
+    },
+    "/applications/{applicationId}/review/data": {
+      "schema": "#/entities/ApplicationReview",
+      "description": "Internal admin rating and evaluation of an application"
+    },
+    "/admins/{adminId}": {
+      "schema": "#/entities/AdminUser",
+      "description": "Authorized administrators list"
+    }
+  }
+}
