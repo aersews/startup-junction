@@ -1,35 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users,
   Search,
-  Filter,
   Download,
-  Database,
   LogOut,
-  Sparkles,
-  ArrowUpRight,
-  Clock,
-  Layers,
-  CheckCircle,
   Eye,
   MessageSquare,
   RefreshCw,
-  PlusCircle,
   FolderOpen,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getApplications,
   updateApplicationStatus,
   exportApplicationsToCSV,
 } from '../../services/applicationService';
-import { isFirebaseConfigured } from '../../services/firebase';
 import type { Application, ApplicationStatus, AdminUser } from '../../types';
 
 interface AdminDashboardPageProps {
   admin: AdminUser;
   onLogout: () => void;
   onOpenApplication: (id: string) => void;
-  onOpenFirebaseConfig: () => void;
 }
 
 const STATUS_COLUMNS: { key: ApplicationStatus; label: string; color: string }[] = [
@@ -49,10 +39,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   admin,
   onLogout,
   onOpenApplication,
-  onOpenFirebaseConfig,
 }) => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
   // Search & Filters
@@ -64,11 +55,16 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   const fetchApps = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getApplications();
       setApplications(data);
     } catch (e) {
+      // Never fall back to a stale local cache here: an admin must not be shown
+      // an empty or out-of-date pipeline that looks authoritative.
       console.error(e);
+      setApplications([]);
+      setLoadError(e instanceof Error ? e.message : 'Could not load applications.');
     } finally {
       setLoading(false);
     }
@@ -76,11 +72,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   useEffect(() => {
     fetchApps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStatusChange = async (id: string, newStatus: ApplicationStatus) => {
-    await updateApplicationStatus(id, newStatus, admin.email);
-    fetchApps();
+    setActionError(null);
+    try {
+      await updateApplicationStatus(id, newStatus, admin.email);
+      await fetchApps();
+    } catch (e) {
+      console.error(e);
+      setActionError(
+        e instanceof Error ? e.message : 'Could not update that application. Please try again.'
+      );
+      await fetchApps();
+    }
   };
 
   // Filter logic
@@ -132,26 +138,42 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-200">
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <p className="font-semibold">Could not load applications</p>
+            <p>{loadError}</p>
+            <button
+              onClick={fetchApps}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <p>{actionError}</p>
+        </div>
+      )}
+
       {/* Top Admin Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-3">
             <span className="text-2xl font-black text-slate-900 font-['Plus_Jakarta_Sans']">
               Applications Pipeline
-            </span>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1.5 ${
-                isFirebaseConfigured()
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isFirebaseConfigured() ? 'bg-emerald-500' : 'bg-amber-500'
-                }`}
-              ></span>
-              {isFirebaseConfigured() ? 'Cloud Firestore' : 'Local Storage Mode'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -174,14 +196,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           >
             <Download className="w-3.5 h-3.5 text-blue-600" />
             <span>Export CSV</span>
-          </button>
-
-          <button
-            onClick={onOpenFirebaseConfig}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
-          >
-            <Database className="w-3.5 h-3.5 text-blue-600" />
-            <span>Firebase Config</span>
           </button>
 
           <button

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# The admin dashboard and the post-submission confirmation page hold no
+# searchable content and must never appear in results.
+Disallow: /admin
+Disallow: /thank-you
+
+Sitemap: https://startupjunction.in/sitemap.xml

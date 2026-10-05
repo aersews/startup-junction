@@ -59,7 +59,7 @@ export const FaqPage: React.FC<FaqPageProps> = ({ onNavigate }) => {
     {
       category: 'Costs & Terms',
       q: 'How do you protect the confidentiality of my idea?',
-      a: 'We take idea confidentiality very seriously. Your application and startup concepts are never published publicly, listed in marketing materials, or visible to unauthenticated visitors. Only authorized Startup Junction administrators can access your details.',
+      a: 'We take idea confidentiality very seriously. Your application and startup concepts are never published publicly, listed in marketing materials, or visible to unauthenticated visitors. Only authorized Startup Junction administrators and mentors, bound by internal confidentiality agreements, can access your details.',
     },
     {
       category: 'Eligibility',
@@ -69,7 +69,7 @@ export const FaqPage: React.FC<FaqPageProps> = ({ onNavigate }) => {
     {
       category: 'The Process',
       q: 'How much time do I need to commit as a student?',
-      a: 'We understand you have classes, exams, and lab sessions. Most student builders commit between 5 to 15 hours per week during the validation and early prototyping stages.',
+      a: 'We understand you have classes, exams, and lab sessions. Most student builders commit between 5 and 15 hours per week during the validation and early prototyping stages.',
     },
   ];
 

@@ -96,11 +96,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
               <Shield className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-slate-900 mb-2 font-['Plus_Jakarta_Sans']">
-              Complete Idea Privacy
+              Complete Idea Protection
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              We never broadcast your concept or intellectual property. Applications are only viewed
-              by the core review team.
+              We never publish your concept or intellectual property. Applications are visible only
+              to authorized Startup Junction administrators and mentors who are bound by internal
+              confidentiality agreements.
             </p>
           </div>
 

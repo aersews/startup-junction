@@ -17,6 +17,7 @@ import {
   User,
   ExternalLink,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getApplicationById,
@@ -65,6 +66,8 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Review Matrix Form State
   const [founderPotential, setFounderPotential] = useState(3);
@@ -79,6 +82,7 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const found = await getApplicationById(applicationId);
       setApp(found);
@@ -105,6 +109,7 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
       }
     } catch (e) {
       console.error(e);
+      setLoadError(e instanceof Error ? e.message : 'Could not load this application.');
     } finally {
       setLoading(false);
     }
@@ -112,23 +117,39 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applicationId]);
 
   const handleStatusChange = async (newStatus: ApplicationStatus) => {
     if (!app) return;
-    await updateApplicationStatus(app.id, newStatus, admin.email);
+    setActionError(null);
+    try {
+      await updateApplicationStatus(app.id, newStatus, admin.email);
+    } catch (e) {
+      console.error(e);
+      setActionError(e instanceof Error ? e.message : 'Could not update the status.');
+      return;
+    }
     setApp({ ...app, status: newStatus });
-    const updatedActivities = getApplicationActivities(app.id);
+    const updatedActivities = await getApplicationActivities(app.id);
     setActivities(updatedActivities);
   };
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!app || !newNote.trim()) return;
-    const added = await addApplicationNote(app.id, newNote.trim(), admin.email);
+    setActionError(null);
+    let added: ApplicationNote;
+    try {
+      added = await addApplicationNote(app.id, newNote.trim(), admin.email);
+    } catch (e) {
+      console.error(e);
+      setActionError(e instanceof Error ? e.message : 'Could not save that note.');
+      return;
+    }
     setNotes([added, ...notes]);
     setNewNote('');
-    setActivities(getApplicationActivities(app.id));
+    setActivities(await getApplicationActivities(app.id));
   };
 
   const handleSaveReview = async () => {
@@ -145,9 +166,16 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
       reviewedBy: admin.email,
       updatedAt: new Date().toISOString(),
     };
-    await saveApplicationReview(app.id, reviewPayload);
+    setActionError(null);
+    try {
+      await saveApplicationReview(app.id, reviewPayload);
+    } catch (e) {
+      console.error(e);
+      setActionError(e instanceof Error ? e.message : 'Could not save the scorecard.');
+      return;
+    }
     setReviewSaved(true);
-    setActivities(getApplicationActivities(app.id));
+    setActivities(await getApplicationActivities(app.id));
     setTimeout(() => setReviewSaved(false), 2500);
   };
 
@@ -184,6 +212,35 @@ export const AdminApplicationDetailPage: React.FC<AdminApplicationDetailPageProp
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-200">
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <p className="font-semibold">Could not load this application</p>
+            <p>{loadError}</p>
+            <button
+              onClick={loadData}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <p>{actionError}</p>
+        </div>
+      )}
+
       {/* Top Breadcrumb & Status Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div className="space-y-1">

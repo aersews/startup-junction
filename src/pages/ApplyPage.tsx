@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -297,6 +297,13 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  // Anti-spam. The honeypot is hidden from humans but a bot filling every
+  // input will populate it; the timer rejects submissions completed implausibly
+  // fast. Neither is visible or announced to assistive technology.
+  const [website, setWebsite] = useState('');
+  const formStartedAt = useRef(Date.now());
+  const MIN_FILL_MS = 8000;
+
   const completion =
     Math.round(((step - 1) / (totalSteps - 1)) * 100);
 
@@ -577,6 +584,12 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Silent accept-and-drop for bots: report nothing, write nothing.
+    if (website.trim() !== '' || Date.now() - formStartedAt.current < MIN_FILL_MS) {
+      setSubmitting(false);
+      return;
+    }
+
     if (!confirmed) {
       setErrors({
         confirmed:
@@ -643,8 +656,12 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({
     } catch (error) {
       console.error('Submission failed:', error);
 
+      // The applicant is only told it worked when Firestore actually accepted
+      // the write. Never claim success for an application we do not hold.
       setGlobalError(
-        'Something went wrong while submitting your application. Your draft has been preserved. Please check your connection and try again.'
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong while submitting your application. Your draft has been preserved on this device — please try again.'
       );
     } finally {
       setSubmitting(false);
@@ -671,6 +688,21 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({
       </div>
 
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        {/* Honeypot: off-screen, not focusable, hidden from assistive tech.
+            Real applicants never see or tab into this field. */}
+        <div aria-hidden="true" className="absolute h-px w-px overflow-hidden opacity-0 pointer-events-none left-[-9999px]">
+          <label htmlFor="sj-website">Website</label>
+          <input
+            id="sj-website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="nope"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </div>
+
         {/* Header */}
         <header className="mb-8 text-center sm:mb-10">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-bold text-cyan-700 shadow-sm">

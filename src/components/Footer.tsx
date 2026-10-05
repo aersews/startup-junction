@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Mail, MessageSquare, MapPin, ArrowUpRight, Shield } from 'lucide-react';
+import { Sparkles, Mail, MessageSquare, MapPin, ArrowUpRight } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -108,6 +108,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   Privacy & Idea Confidentiality
                 </button>
               </li>
+              /*PLACEHOLDER*/ // trust & policy
               <li>
                 <button
                   onClick={() => {
@@ -117,18 +118,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   className="hover:text-white transition-colors text-left"
                 >
                   Terms & Founder Principles
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => {
-                    onNavigate('/admin');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="text-slate-400 hover:text-slate-200 inline-flex items-center gap-1.5"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin Workspace</span>
                 </button>
               </li>
             </ul>
@@ -142,19 +131,25 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <Mail className="w-4 h-4 text-[--color-brand-primary] mt-0.5 shrink-0" />
                 <span>
                   <strong className="block text-slate-300">Official Inquiries</strong>
-                  support@startupjunction.in
+                  <a
+                    href="mailto:support@startupjunction.in"
+                    className="hover:text-white hover:underline underline-offset-2 break-all"
+                  >
+                    support@startupjunction.in
+                  </a>
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <MessageSquare className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                 <span>
                   <strong className="block text-slate-300">WhatsApp Connect</strong>
-                  Direct chat on application review
+                  We message you on WhatsApp after reviewing your application
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
-                <span>Patna & Regional Hubs, Bihar, India</span>
+                {/* TODO(owner): replace with the organisation's real postal address. */}
+                <span>{'{{REGISTERED_ADDRESS}}'}</span>
               </div>
             </div>
           </div>

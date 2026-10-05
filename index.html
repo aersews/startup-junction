@@ -3,23 +3,129 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563EB" />
+
     <title>Startup Junction — Turn Your Idea Into Something Real</title>
-    <meta name="description" content="Startup Junction helps students and aspiring founders turn ideas into real products, teams and startups through mentorship, guidance, team building and practical support." />
+    <meta
+      name="description"
+      content="Startup Junction helps students and aspiring founders turn ideas, problems and skills into real products, teams and ventures through mentorship, guidance and practical support. Free to join, open across India."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://startupjunction.in/" />
+
+    <!-- Open Graph / Twitter. Per-route values are swapped client-side by
+         src/services/seo.ts, but these are what non-JS crawlers see. -->
     <meta property="og:title" content="Startup Junction — Turn Your Idea Into Something Real" />
-    <meta property="og:description" content="Startup Junction helps students and aspiring founders turn ideas into real products, teams and startups through mentorship, guidance, team building and practical support." />
+    <meta
+      property="og:description"
+      content="Startup Junction helps students and aspiring founders turn ideas, problems and skills into real products, teams and ventures through mentorship, guidance and practical support. Free to join, open across India."
+    />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Startup Junction" />
+    <meta property="og:url" content="https://startupjunction.in/" />
+    <meta property="og:image" content="https://startupjunction.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Startup Junction — You have the idea. Let's build what comes next."
+    />
+    <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Startup Junction — Turn Your Idea Into Something Real" />
-    <meta name="twitter:description" content="Startup Junction helps students and aspiring founders turn ideas into real products, teams and startups through mentorship, guidance, team building and practical support." />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>" />
+    <meta
+      name="twitter:description"
+      content="Mentorship, guidance and hands-on support for students and aspiring founders turning ideas into real products, teams and ventures."
+    />
+    <meta name="twitter:image" content="https://startupjunction.in/og-image.png" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/startup-junction-logo-150-150.png" />
+
+    <!-- Self-hosted variable fonts: preload only the latin subset that renders
+         above the fold. Removes the render-blocking fonts.googleapis.com round-trip. -->
+    <link
+      rel="preload"
+      href="/fonts/plus-jakarta-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!--
+      Structured data. TODO(owner): replace the {{PLACEHOLDER}} values below with
+      real facts before launch — they are asserted to search engines and should
+      not be left as tokens. Required for a trustworthy rich result.
+        {{LEGAL_ENTITY_NAME}}      registered / legal name of the organisation
+        {{REGISTRATION_NUMBER}}    registration or company identifier, if any
+        {{FOUNDER_OR_TEAM}}        names to publish as founders/team
+        {{REGISTERED_ADDRESS}}     full postal address of record
+        {{CONTACT_PHONE}}          reachable phone / WhatsApp number
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "NGO",
+        "@id": "https://startupjunction.in/#organization",
+        "name": "Startup Junction",
+        "alternateName": "Startup Junction — Campus to Company",
+        "url": "https://startupjunction.in/",
+        "logo": "https://startupjunction.in/startup-junction-logo-150-150.png",
+        "image": "https://startupjunction.in/og-image.png",
+        "description": "Startup Junction helps students and aspiring founders turn ideas, problems and skills into real products, teams and ventures through mentorship, guidance and practical support.",
+        "slogan": "You have the idea. Let's build what comes next.",
+        "email": "support@startupjunction.in",
+        "telephone": "{{CONTACT_PHONE}}",
+        "legalName": "{{LEGAL_ENTITY_NAME}}",
+        "identifier": "{{REGISTRATION_NUMBER}}",
+        "areaServed": {
+          "@type": "Country",
+          "name": "India"
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "{{REGISTERED_ADDRESS}}",
+          "addressCountry": "IN"
+        },
+        "founder": {
+          "@type": "Person",
+          "name": "{{FOUNDER_OR_TEAM}}"
+        },
+        "knowsAbout": [
+          "Startup mentorship",
+          "Idea validation",
+          "Team formation",
+          "MVP development",
+          "Student entrepreneurship"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR",
+          "availability": "https://schema.org/InStock",
+          "description": "Free to join. No application or cohort fees."
+        }
+      }
+    </script>
   </head>
   <body class="bg-[#F8FAFC] text-[#0F172A] antialiased selection:bg-blue-600 selection:text-white min-h-screen">
     <div id="root"></div>
+    <noscript>
+      <div style="max-width: 40rem; margin: 3rem auto; padding: 0 1.5rem; font-family: system-ui, sans-serif;">
+        <h1>Startup Junction</h1>
+        <p>
+          Startup Junction helps students and aspiring founders turn ideas into real products,
+          teams and ventures through mentorship and practical support. Free to join, open across
+          India, starting from Bihar.
+        </p>
+        <p>
+          This page needs JavaScript to load the application form. If you are unable to enable
+          JavaScript, email us at
+          <a href="mailto:support@startupjunction.in">support@startupjunction.in</a>.
+        </p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

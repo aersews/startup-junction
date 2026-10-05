@@ -1,15 +1,4 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  query,
-  orderBy,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType, isFirebaseConfigured } from './firebase';
+import { getFirestoreModule, logFirestoreError, OperationType, requireAuth, requireDb } from './firebase';
 import type {
   Application,
   ApplicationStatus,
@@ -18,37 +7,86 @@ import type {
   ActivityLog,
 } from '../types';
 
-const STORAGE_KEY = 'sj_applications_store';
 const NOTES_KEY_PREFIX = 'sj_notes_';
 const REVIEWS_KEY_PREFIX = 'sj_reviews_';
 const ACTIVITIES_KEY_PREFIX = 'sj_activities_';
 
-// Initial sample applications (realistic Bihar students/founders) for instant review & demo
-const INITIAL_DEMO_APPLICATIONS: Application[] = [];
+const REVIEW_DOC_ID = 'current';
 
-function getLocalApplications(): Application[] {
+const GENERIC_FAILURE =
+  'We could not save that just now. Please try again in a moment — if it keeps failing, email support@startupjunction.in.';
+
+const GENERIC_READ_FAILURE =
+  'We could not load your applications just now. Please check your connection and try again.';
+
+/** Local mirror helpers. These are a convenience cache for admins only —
+ *  they are never treated as the source of truth for applicant data. */
+function readLocal<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEMO_APPLICATIONS));
-      return INITIAL_DEMO_APPLICATIONS;
-    }
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch (err) {
-    console.error('Error reading local applications:', err);
-    return INITIAL_DEMO_APPLICATIONS;
+    console.warn(`Could not read local cache "${key}"`, err);
+    return fallback;
   }
 }
 
-function saveLocalApplications(apps: Application[]) {
+function writeLocal(key: string, value: unknown) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch (err) {
-    console.error('Error saving local applications:', err);
+    console.warn(`Could not write local cache "${key}"`, err);
   }
 }
 
-// Generate unique ID in SJ-XXXXXX format
+/** Firestore rejects `undefined` values, so drop them before writing. */
+function stripUndefined<T>(input: T): T {
+  const output: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (value !== undefined) output[key] = value;
+  }
+  return output as T;
+}
+
+/** Every field a public submission is permitted to write. Mirrored in
+ *  firestore.rules `hasOnly([...])` — keep the two lists in sync. */
+export const SUBMITTABLE_FIELDS = [
+  'id',
+  'fullName',
+  'email',
+  'whatsapp',
+  'city',
+  'state',
+  'linkedin',
+  'portfolio',
+  'college',
+  'degree',
+  'branch',
+  'currentYear',
+  'currentSemester',
+  'expectedGraduationYear',
+  'technicalSkills',
+  'businessCreativeSkills',
+  'projectsBuilt',
+  'previousExperience',
+  'ideaStatus',
+  'ideaTitle',
+  'problemStatement',
+  'targetUsers',
+  'solutionDescription',
+  'stage',
+  'teamStatus',
+  'needs',
+  'seriousness',
+  'timeCommitment',
+  'motivation',
+  'status',
+  'createdAt',
+  'updatedAt',
+  'createdAtServer',
+] as const;
+
+/** Generate unique ID in SJ-XXXXXX format */
 export function generateApplicationId(): string {
   const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let result = 'SJ-';
@@ -58,6 +96,13 @@ export function generateApplicationId(): string {
   return result;
 }
 
+/**
+ * Persists a new application to Firestore.
+ *
+ * This NEVER falls back to local storage: a submission that is not in
+ * Firestore has not been received, and telling the applicant otherwise
+ * loses their application. Failures propagate to the caller.
+ */
 export async function submitApplication(
   payload: Omit<Application, 'id' | 'status' | 'createdAt' | 'updatedAt'>
 ): Promise<Application> {
@@ -72,168 +117,194 @@ export async function submitApplication(
     updatedAt: timestamp,
   };
 
-  // Try saving to Firebase if configured
-  if (isFirebaseConfigured() && db) {
-    try {
-      const appRef = doc(db, 'applications', id);
-      await setDoc(appRef, {
-        ...newApp,
-        createdAtServer: serverTimestamp(),
-      });
-    } catch (err) {
-      console.warn('Firebase submission failed or permission denied, recording locally:', err);
-      // We do not break the applicant's experience, but record the error conforming to skill specs
-      try {
-        handleFirestoreError(err, OperationType.WRITE, `applications/${id}`);
-      } catch (logErr) {
-        // Handled & logged, proceed to keep local mirror safe
-      }
-    }
+  // Defence in depth: strip anything outside the documented allowlist before it
+  // reaches Firestore. firestore.rules rejects unknown fields with hasOnly(),
+  // but failing here gives a clean error instead of an opaque permission one.
+  const allowed = new Set<string>(SUBMITTABLE_FIELDS);
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(newApp)) {
+    if (allowed.has(key)) clean[key] = value;
   }
 
-  // Always update local storage
-  const current = getLocalApplications();
-  const updated = [newApp, ...current];
-  saveLocalApplications(updated);
+  const [db, fs] = await Promise.all([requireDb(), getFirestoreModule()]);
+  const appRef = fs.doc(db, 'applications', id);
 
-  // Add initial activity
-  logApplicationActivity(id, 'Application submitted by applicant', 'Public Applicant');
+  try {
+    await fs.setDoc(appRef, stripUndefined({ ...clean, createdAtServer: fs.serverTimestamp() }));
+  } catch (err) {
+    logFirestoreError(err, OperationType.CREATE, `applications/${id}`);
+    throw new Error(GENERIC_FAILURE);
+  }
+
+  await logApplicationActivity(id, 'Application submitted by applicant', 'Public Applicant');
 
   return newApp;
 }
 
+/** Reads every application. Requires a signed-in admin; throws on failure. */
 export async function getApplications(): Promise<Application[]> {
-  if (isFirebaseConfigured() && db && auth?.currentUser) {
-    try {
-      const q = query(collection(db, 'applications'), orderBy('createdAtServer', 'desc'));
-      const snapshot = await getDocs(q);
-      const apps: Application[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data() as Application;
-        apps.push({ ...data, id: docSnap.id });
-      });
-      if (apps.length > 0) {
-        // Merge with local to ensure nothing is lost
-        saveLocalApplications(apps);
-        return apps;
-      }
-    } catch (err) {
-      console.warn('Could not read from Firestore, using local repository:', err);
-      try {
-        handleFirestoreError(err, OperationType.LIST, 'applications');
-      } catch (e) {
-        // fall back to local
-      }
-    }
+  const [db, auth, fs] = await Promise.all([requireDb(), requireAuth(), getFirestoreModule()]);
+
+  if (!auth.currentUser) {
+    throw new Error('Your admin session has expired. Please sign in again.');
   }
 
-  return getLocalApplications();
+  try {
+    const q = fs.query(fs.collection(db, 'applications'), fs.orderBy('createdAtServer', 'desc'));
+    const snapshot = await fs.getDocs(q);
+    const apps: Application[] = [];
+    snapshot.forEach((docSnap) => {
+      apps.push({ ...(docSnap.data() as Application), id: docSnap.id });
+    });
+    writeLocal('sj_applications_cache', apps);
+    return apps;
+  } catch (err) {
+    logFirestoreError(err, OperationType.LIST, 'applications');
+    throw new Error(GENERIC_READ_FAILURE);
+  }
 }
 
 export async function getApplicationById(id: string): Promise<Application | null> {
-  if (isFirebaseConfigured() && db && auth?.currentUser) {
-    try {
-      const docRef = doc(db, 'applications', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return { ...(docSnap.data() as Application), id: docSnap.id };
-      }
-    } catch (err) {
-      console.warn('Could not fetch application from Firestore, checking local storage:', err);
-    }
+  const [db, auth, fs] = await Promise.all([requireDb(), requireAuth(), getFirestoreModule()]);
+
+  if (!auth.currentUser) {
+    throw new Error('Your admin session has expired. Please sign in again.');
   }
 
-  const all = getLocalApplications();
-  return all.find((a) => a.id === id) || null;
+  try {
+    const docSnap = await fs.getDoc(fs.doc(db, 'applications', id));
+    if (!docSnap.exists()) return null;
+    return { ...(docSnap.data() as Application), id: docSnap.id };
+  } catch (err) {
+    logFirestoreError(err, OperationType.GET, `applications/${id}`);
+    throw new Error(GENERIC_READ_FAILURE);
+  }
 }
 
+/**
+ * Updates an application's pipeline status. Firestore is authoritative —
+ * a failed write is reported rather than silently mirrored locally.
+ */
 export async function updateApplicationStatus(
   id: string,
   newStatus: ApplicationStatus,
   adminEmail: string
-): Promise<boolean> {
+): Promise<Application | null> {
+  const [db, auth, fs] = await Promise.all([requireDb(), requireAuth(), getFirestoreModule()]);
   const timestamp = new Date().toISOString();
 
-  if (isFirebaseConfigured() && db && auth?.currentUser) {
-    try {
-      const docRef = doc(db, 'applications', id);
-      await updateDoc(docRef, {
-        status: newStatus,
-        updatedAt: timestamp,
-      });
-    } catch (err) {
-      console.warn('Firestore status update failed:', err);
-    }
+  if (!auth.currentUser) {
+    throw new Error('Your admin session has expired. Please sign in again.');
   }
 
-  // Update local store
-  const all = getLocalApplications();
-  const idx = all.findIndex((a) => a.id === id);
-  if (idx !== -1) {
-    const oldStatus = all[idx].status;
-    all[idx].status = newStatus;
-    all[idx].updatedAt = timestamp;
-    saveLocalApplications(all);
+  let updated: Application;
+  try {
+    const docRef = fs.doc(db, 'applications', id);
+    const before = await fs.getDoc(docRef);
+    if (!before.exists()) return null;
+    const previousStatus = (before.data() as Application).status;
+    await fs.updateDoc(docRef, { status: newStatus, updatedAt: timestamp });
+    updated = { ...(before.data() as Application), id, status: newStatus, updatedAt: timestamp };
 
-    logApplicationActivity(
+    await logApplicationActivity(
       id,
-      `Status changed from ${oldStatus} to ${newStatus}`,
+      `Status changed from ${previousStatus} to ${newStatus}`,
       adminEmail
     );
-    return true;
+  } catch (err) {
+    logFirestoreError(err, OperationType.UPDATE, `applications/${id}`);
+    throw new Error(GENERIC_FAILURE);
   }
-  return false;
+
+  return updated;
 }
 
-// Activity logs
-export function getApplicationActivities(appId: string): ActivityLog[] {
+// ---------------------------------------------------------------------------
+// Activity log — persisted to applications/{id}/activity/{logId}
+// ---------------------------------------------------------------------------
+
+export async function getApplicationActivities(appId: string): Promise<ActivityLog[]> {
+  const localKey = `${ACTIVITIES_KEY_PREFIX}${appId}`;
+  const local = readLocal<ActivityLog[]>(localKey, []);
+
   try {
-    const raw = localStorage.getItem(`${ACTIVITIES_KEY_PREFIX}${appId}`);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
+    const [db, auth, fs] = await Promise.all([
+      requireDb(),
+      requireAuth(),
+      getFirestoreModule(),
+    ]);
+    if (!auth.currentUser) return local;
+
+    const q = fs.query(
+      fs.collection(db, 'applications', appId, 'activity'),
+      fs.orderBy('createdAt', 'desc')
+    );
+    const snapshot = await fs.getDocs(q);
+    const logs: ActivityLog[] = snapshot.docs.map((d) => d.data() as ActivityLog);
+    writeLocal(localKey, logs);
+    return logs;
+  } catch (err) {
+    logFirestoreError(err, OperationType.LIST, `applications/${appId}/activity`);
+    return local;
   }
-  return [
-    {
-      id: 'act-init',
-      action: 'Application received and registered in system',
-      performedBy: 'System',
-      timestamp: new Date().toISOString(),
-    },
-  ];
 }
 
-export function logApplicationActivity(
+export async function logApplicationActivity(
   appId: string,
   action: string,
   performedBy: string,
   details?: string
 ) {
-  const current = getApplicationActivities(appId);
-  const newLog: ActivityLog = {
-    id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+  const log: ActivityLog = {
+    id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     action,
     performedBy,
     timestamp: new Date().toISOString(),
     details,
   };
-  const updated = [newLog, ...current];
+
+  const localKey = `${ACTIVITIES_KEY_PREFIX}${appId}`;
+  writeLocal(localKey, [log, ...readLocal<ActivityLog[]>(localKey, [])]);
+
   try {
-    localStorage.setItem(`${ACTIVITIES_KEY_PREFIX}${appId}`, JSON.stringify(updated));
-  } catch (e) {
-    console.error(e);
+    const [db, fs] = await Promise.all([requireDb(), getFirestoreModule()]);
+    await fs.setDoc(fs.doc(db, 'applications', appId, 'activity', log.id), {
+      ...stripUndefined(log),
+      createdAtServer: fs.serverTimestamp(),
+    });
+  } catch (err) {
+    logFirestoreError(err, OperationType.CREATE, `applications/${appId}/activity/${log.id}`);
   }
 }
 
-// Notes
+// ---------------------------------------------------------------------------
+// Notes — persisted to applications/{id}/notes/{noteId}
+// ---------------------------------------------------------------------------
+
 export async function getApplicationNotes(appId: string): Promise<ApplicationNote[]> {
+  const localKey = `${NOTES_KEY_PREFIX}${appId}`;
+  const local = readLocal<ApplicationNote[]>(localKey, []);
+
   try {
-    const raw = localStorage.getItem(`${NOTES_KEY_PREFIX}${appId}`);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
+    const [db, auth, fs] = await Promise.all([
+      requireDb(),
+      requireAuth(),
+      getFirestoreModule(),
+    ]);
+    if (!auth.currentUser) return local;
+
+    const q = fs.query(
+      fs.collection(db, 'applications', appId, 'notes'),
+      fs.orderBy('createdAt', 'desc')
+    );
+    const snapshot = await fs.getDocs(q);
+    const notes = snapshot.docs.map((d) => d.data() as ApplicationNote);
+    writeLocal(localKey, notes);
+    return notes;
+  } catch (err) {
+    logFirestoreError(err, OperationType.LIST, `applications/${appId}/notes`);
+    return local;
   }
-  return [];
 }
 
 export async function addApplicationNote(
@@ -242,51 +313,80 @@ export async function addApplicationNote(
   adminEmail: string
 ): Promise<ApplicationNote> {
   const note: ApplicationNote = {
-    id: `note-${Date.now()}`,
+    id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     authorEmail: adminEmail,
     content,
     createdAt: new Date().toISOString(),
   };
 
-  const current = await getApplicationNotes(appId);
-  const updated = [note, ...current];
+  const localKey = `${NOTES_KEY_PREFIX}${appId}`;
+  writeLocal(localKey, [note, ...readLocal<ApplicationNote[]>(localKey, [])]);
+
+  const [db, fs] = await Promise.all([requireDb(), getFirestoreModule()]);
   try {
-    localStorage.setItem(`${NOTES_KEY_PREFIX}${appId}`, JSON.stringify(updated));
-    logApplicationActivity(appId, 'Added an internal note', adminEmail, content.substring(0, 60));
-  } catch (e) {
-    console.error(e);
+    await fs.setDoc(fs.doc(db, 'applications', appId, 'notes', note.id), note);
+  } catch (err) {
+    logFirestoreError(err, OperationType.CREATE, `applications/${appId}/notes/${note.id}`);
+    throw new Error(GENERIC_FAILURE);
   }
+
+  await logApplicationActivity(appId, 'Added an internal note', adminEmail, content.slice(0, 60));
   return note;
 }
 
-// Review Matrix
+// ---------------------------------------------------------------------------
+// Review scorecard — persisted to applications/{id}/review/current
+// ---------------------------------------------------------------------------
+
 export async function getApplicationReview(appId: string): Promise<ApplicationReview | null> {
+  const localKey = `${REVIEWS_KEY_PREFIX}${appId}`;
+  const local = readLocal<ApplicationReview | null>(localKey, null);
+
   try {
-    const raw = localStorage.getItem(`${REVIEWS_KEY_PREFIX}${appId}`);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
+    const [db, auth, fs] = await Promise.all([
+      requireDb(),
+      requireAuth(),
+      getFirestoreModule(),
+    ]);
+    if (!auth.currentUser) return local;
+
+    const docSnap = await fs.getDoc(fs.doc(db, 'applications', appId, 'review', REVIEW_DOC_ID));
+    if (!docSnap.exists()) return local;
+    const review = docSnap.data() as ApplicationReview;
+    writeLocal(localKey, review);
+    return review;
+  } catch (err) {
+    logFirestoreError(err, OperationType.GET, `applications/${appId}/review/${REVIEW_DOC_ID}`);
+    return local;
   }
-  return null;
 }
 
 export async function saveApplicationReview(
   appId: string,
   review: ApplicationReview
 ): Promise<void> {
+  const localKey = `${REVIEWS_KEY_PREFIX}${appId}`;
+  writeLocal(localKey, review);
+
+  const [db, fs] = await Promise.all([requireDb(), getFirestoreModule()]);
   try {
-    localStorage.setItem(`${REVIEWS_KEY_PREFIX}${appId}`, JSON.stringify(review));
-    logApplicationActivity(
-      appId,
-      'Saved internal evaluation scorecard',
-      review.reviewedBy || 'Admin'
-    );
-  } catch (e) {
-    console.error(e);
+    await fs.setDoc(fs.doc(db, 'applications', appId, 'review', REVIEW_DOC_ID), review);
+  } catch (err) {
+    logFirestoreError(err, OperationType.WRITE, `applications/${appId}/review/${REVIEW_DOC_ID}`);
+    throw new Error(GENERIC_FAILURE);
   }
+
+  await logApplicationActivity(
+    appId,
+    'Saved internal evaluation scorecard',
+    review.reviewedBy || 'Admin'
+  );
 }
 
-// Export to CSV
+// ---------------------------------------------------------------------------
+// CSV export
+// ---------------------------------------------------------------------------
+
 export function exportApplicationsToCSV(apps: Application[]) {
   const headers = [
     'Application ID',
@@ -332,7 +432,15 @@ export function exportApplicationsToCSV(apps: Application[]) {
     escapeCSV(new Date(app.createdAt).toLocaleDateString()),
   ]);
 
-  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  // Prefix formula-injection triggers so spreadsheets treat the value as text.
+  const neutralize = (cell: string) =>
+    /^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell;
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map((r) => r.map(neutralize).join(',')),
+  ].join('\n');
+
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -341,4 +449,5 @@ export function exportApplicationsToCSV(apps: Application[]) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

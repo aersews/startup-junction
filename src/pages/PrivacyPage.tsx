@@ -106,7 +106,26 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
         {/* 4. Contact Us */}
         <section className="space-y-3 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">
-            4. Data Inquiries & Deletion Requests
+            4. Data Retention & Automated Processing
+          </h2>
+          <ul className="list-disc pl-5 space-y-1 text-slate-600 text-xs sm:text-sm">
+            <li>
+              <strong>Retention:</strong> We keep application records for{' '}
+              {'{{RETENTION_PERIOD}}'} from the date of your last interaction with us, after which
+              they are deleted or anonymised.
+            </li>
+            <li>
+              <strong>Automated processing:</strong> We use automated tools to help our review team
+              sort and triage applications.{' '}
+              <strong>{'{{AI_PROCESSING_DISCLOSURE}}'}</strong>
+            </li>
+          </ul>
+        </section>
+
+        {/* 5. Contact Us */}
+        <section className="space-y-3 pt-4 border-t border-slate-100">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">
+            5. Data Inquiries &amp; Deletion Requests
           </h2>
           <p>
             You can request access to your submitted data, request corrections, or request complete
@@ -114,10 +133,24 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
           </p>
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
             <p>
-              <strong>Email:</strong> support@startupjunction.in
+              <strong>Email:</strong>{' '}
+              <a
+                href="mailto:support@startupjunction.in?subject=Data%20Access%20%2F%20Deletion%20Request"
+                className="text-blue-600 underline underline-offset-2 hover:text-blue-700 font-semibold break-all"
+              >
+                support@startupjunction.in
+              </a>
             </p>
             <p>
               <strong>Subject line:</strong> Data Access / Deletion Request
+            </p>
+            {/* TODO(owner): confirm these are correct before launch. */}
+            <p>
+              <strong>Grievance Officer:</strong> {'{{GRIEVANCE_OFFICER_NAME}}'},{' '}
+              {'{{GRIEVANCE_OFFICER_EMAIL}}'}
+            </p>
+            <p>
+              <strong>Response window:</strong> We respond to data requests within 30 days.
             </p>
           </div>
         </section>

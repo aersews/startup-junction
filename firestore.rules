@@ -2,19 +2,43 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default-deny catch-all
-    match /{document=**} {
-      allow read, write: if false;
+    // -------------------------------------------------------------------------
+    // Admin authorisation
+    //
+    // Access is granted by EITHER a custom claim OR membership of the `admins`
+    // collection OR the mailbox list below — in that order of preference.
+    //
+    // BOOTSTRAPPING (read this before first deploy):
+    //   The `admins` collection cannot bootstrap itself, because creating an
+    //   admin doc already requires admin. So the first admin is granted by the
+    //   mailbox list:
+    //     1. Put your admin address in ADMIN_EMAILS() below.
+    //     2. Deploy. Sign in once with that address.
+    //     3. In the Firebase console, create
+    //        /admins/{uid} = { email, role: "admin", createdAt: <serverTimestamp> }
+    //        where {uid} is your Firebase Auth UID.
+    //     4. Remove your address from ADMIN_EMAILS() and redeploy.
+    //
+    // SECURITY: this list is committed to git. Keep it to shared, role-based
+    // mailboxes you control as an organisation — never a personal address.
+    //
+    // TODO(owner): replace 'admin@startupjunction.in' with the real admin
+    // mailbox and complete steps 1-4 above.
+    // -------------------------------------------------------------------------
+    function ADMIN_EMAILS() {
+      return ['admin@startupjunction.in'];
     }
 
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Prefer a custom claim; fall back to the allow-list / admins collection.
     function isAdmin() {
       return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email in ['aersews@gmail.com', 'admin@startupjunction.in']
+        request.auth.token.admin == true ||
+        request.auth.token.adminEmail in ADMIN_EMAILS() ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
@@ -22,41 +46,126 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Applications collection: Public submissions allowed, reads and updates restricted strictly to Admins
+    function isAdminEmail(email) {
+      return email is string && email.size() <= 150;
+    }
+
+    // Exact field allowlist for public submissions. Anything else is rejected,
+    // which blocks field-injection and stops a public client from smuggling in
+    // extra documents. Must stay in sync with SUBMITTABLE_FIELDS in
+    // src/services/applicationService.ts.
+    function hasOnlySubmissionFields() {
+      return request.resource.data.keys().hasOnly([
+        'id', 'fullName', 'email', 'whatsapp', 'city', 'state', 'linkedin',
+        'portfolio', 'college', 'degree', 'branch', 'currentYear',
+        'currentSemester', 'expectedGraduationYear', 'technicalSkills',
+        'businessCreativeSkills', 'projectsBuilt', 'previousExperience',
+        'ideaStatus', 'ideaTitle', 'problemStatement', 'targetUsers',
+        'solutionDescription', 'stage', 'teamStatus', 'needs', 'seriousness',
+        'timeCommitment', 'motivation', 'status', 'createdAt', 'updatedAt',
+        'createdAtServer'
+      ]);
+    }
+
+    function boundedString(field, max) {
+      return request.resource.data[field] is string
+        && request.resource.data[field].size() <= max;
+    }
+
+    // Optional free-text fields may be absent entirely. Tolerating absence
+    // matters: a rule that rejects an absent field would cost the applicant
+    // their entire application.
+    function optionalString(field, max) {
+      return !(field in request.resource.data)
+        || (request.resource.data[field] is string
+            && request.resource.data[field].size() <= max);
+    }
+
+    function optionalStringList(field) {
+      return !(field in request.resource.data)
+        || (request.resource.data[field] is list
+            && request.resource.data[field].size() <= 50);
+    }
+
+    // -------------------------------------------------------------------------
+    // Applications
+    // -------------------------------------------------------------------------
     match /applications/{applicationId} {
       allow get, list: if isAdmin();
 
       allow create: if isValidId(applicationId) &&
+        hasOnlySubmissionFields() &&
+        // The server decides when this arrived; the client cannot backdate.
+        request.resource.data.createdAtServer == request.time &&
+        request.resource.data.status == 'NEW' &&
+        // The document id must match the id stored inside the payload.
+        request.resource.data.id == applicationId &&
         request.resource.data.fullName is string &&
         request.resource.data.fullName.size() > 0 &&
-        request.resource.data.fullName.size() <= 100 &&
-        request.resource.data.email is string &&
-        request.resource.data.email.size() <= 150 &&
+        boundedString('fullName', 100) &&
+        isAdminEmail(request.resource.data.email) &&
+        request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
         request.resource.data.whatsapp is string &&
-        request.resource.data.whatsapp.size() <= 20 &&
-        request.resource.data.status == 'NEW';
+        boundedString('whatsapp', 20) &&
+        request.resource.data.whatsapp.matches('^[0-9+][0-9]{7,19}$') &&
+        boundedString('city', 100) &&
+        boundedString('state', 100) &&
+        boundedString('college', 200) &&
+        optionalString('degree', 100) &&
+        optionalString('branch', 100) &&
+        optionalString('currentYear', 50) &&
+        optionalString('currentSemester', 50) &&
+        optionalString('expectedGraduationYear', 10) &&
+        optionalString('linkedin', 250) &&
+        optionalString('portfolio', 250) &&
+        optionalString('projectsBuilt', 3000) &&
+        optionalString('previousExperience', 3000) &&
+        optionalString('ideaStatus', 100) &&
+        optionalString('ideaTitle', 300) &&
+        optionalString('problemStatement', 3000) &&
+        optionalString('targetUsers', 2000) &&
+        optionalString('solutionDescription', 3000) &&
+        optionalString('stage', 100) &&
+        optionalString('teamStatus', 100) &&
+        optionalString('seriousness', 100) &&
+        optionalString('timeCommitment', 100) &&
+        optionalString('motivation', 3000) &&
+        optionalStringList('technicalSkills') &&
+        optionalStringList('businessCreativeSkills') &&
+        optionalStringList('needs');
 
-      allow update, delete: if isAdmin();
+      // Status changes and edits are admin-only. The client may not rewrite the
+      // server timestamp, the applicant payload, or the document id.
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt']);
 
-      // Subcollection for internal admin notes
+      allow delete: if isAdmin();
+
+      // Internal admin notes
       match /notes/{noteId} {
         allow read, write: if isAdmin();
       }
 
-      // Subcollection for internal admin reviews
+      // Internal admin review scorecard (single doc: "current")
       match /review/{reviewId} {
         allow read, write: if isAdmin();
       }
 
-      // Subcollection for internal activity logs
+      // Internal activity / audit log
       match /activity/{activityId} {
         allow read, write: if isAdmin();
       }
     }
 
+    // -------------------------------------------------------------------------
     // Admins collection
+    // -------------------------------------------------------------------------
     match /admins/{adminId} {
-      allow read: if isSignedIn();
+      // Only admins may enumerate the admin roster. A signed-in non-admin can
+      // still read their OWN document so the client can confirm its grant.
+      allow get: if isAdmin() || (isSignedIn() && adminId == request.auth.uid);
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
   }

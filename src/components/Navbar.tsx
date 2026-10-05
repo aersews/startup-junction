@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
 
 interface NavbarProps {
   currentPath: string;
@@ -94,15 +94,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
 
           {/* Right Action & Admin entry */}
           <div className="hidden sm:flex items-center gap-3">
-            {/* <button
-              onClick={() => onNavigate('/admin')}
-              className="text-xs text-slate-400 hover:text-slate-700 p-2 rounded-md transition-colors flex items-center gap-1"
-              title="Admin Portal"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span className="hidden xl:inline">Admin</span>
-            </button> */}
-
             <button
               onClick={() => onNavigate('/apply')}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600  text-white text-sm font-semibold hover:bg-[--color-brand-primary-hover] shadow-sm shadow-[--color-brand-primary]/30 transition-all hover:gap-2.5 active:scale-98"
@@ -160,17 +151,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
             >
               <span>Join Startup Junction</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onNavigate('/admin');
-              }}
-              className="w-full text-center text-xs text-slate-500 hover:text-slate-800 py-1.5 flex items-center justify-center gap-1"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Login / Dashboard</span>
             </button>
           </div>
         </div>
