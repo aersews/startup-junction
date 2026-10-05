@@ -36,7 +36,7 @@ export const DEFAULT_FIREBASE_CONFIG: FirebaseClientConfig = {
   firestoreDatabaseId: env.VITE_FIREBASE_DATABASE_ID || '(default)',
 };
 
-export const SITE_URL = (env.VITE_SITE_URL || 'https://startupjunction.in').replace(/\/$/, '');
+export const SITE_URL = (env.VITE_SITE_URL || 'https://startup-junction.in').replace(/\/$/, '');
 
 if (!env.VITE_FIREBASE_API_KEY || !env.VITE_FIREBASE_PROJECT_ID) {
   console.warn(

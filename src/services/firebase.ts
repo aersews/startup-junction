@@ -74,7 +74,7 @@ async function createHandles(): Promise<FirebaseHandles> {
 
   if (!config.apiKey || !config.projectId) {
     throw new BackendUnavailableError(
-      'Server configuration is incomplete. Please contact support@startupjunction.in.'
+      'Server configuration is incomplete. Please contact support@startup-junction.in.'
     );
   }
 
@@ -124,7 +124,7 @@ export async function requireDb(): Promise<Firestore> {
   } catch (err) {
     logFirestoreError(err, OperationType.GET, null);
     throw new BackendUnavailableError(
-      'Our application system is temporarily unavailable, so your application cannot be saved right now. Please try again in a few minutes, or email support@startupjunction.in.'
+      'Our application system is temporarily unavailable, so your application cannot be saved right now. Please try again in a few minutes, or email support@startup-junction.in.'
     );
   }
 }

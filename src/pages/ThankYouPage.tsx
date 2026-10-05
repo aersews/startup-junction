@@ -75,10 +75,10 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ application, onNavig
             If you were not able to submit, please apply again. If you already submitted and
             need your reference number, email{' '}
             <a
-              href="mailto:support@startupjunction.in"
+              href="mailto:support@startup-junction.in"
               className="text-blue-600 underline underline-offset-2 hover:text-blue-700 font-semibold"
             >
-              support@startupjunction.in
+              support@startup-junction.in
             </a>{' '}
             with your email address and we will look it up.
           </p>

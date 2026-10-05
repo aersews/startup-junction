@@ -5,43 +5,43 @@
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://startupjunction.in/</loc>
+    <loc>https://startup-junction.in/</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/how-it-works</loc>
+    <loc>https://startup-junction.in/how-it-works</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/apply</loc>
+    <loc>https://startup-junction.in/apply</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/about</loc>
+    <loc>https://startup-junction.in/about</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/faq</loc>
+    <loc>https://startup-junction.in/faq</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/privacy</loc>
+    <loc>https://startup-junction.in/privacy</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://startupjunction.in/terms</loc>
+    <loc>https://startup-junction.in/terms</loc>
     <lastmod>{{LASTMOD}}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

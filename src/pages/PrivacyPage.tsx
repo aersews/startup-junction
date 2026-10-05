@@ -135,10 +135,10 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
             <p>
               <strong>Email:</strong>{' '}
               <a
-                href="mailto:support@startupjunction.in?subject=Data%20Access%20%2F%20Deletion%20Request"
+                href="mailto:support@startup-junction.in?subject=Data%20Access%20%2F%20Deletion%20Request"
                 className="text-blue-600 underline underline-offset-2 hover:text-blue-700 font-semibold break-all"
               >
-                support@startupjunction.in
+                support@startup-junction.in
               </a>
             </p>
             <p>

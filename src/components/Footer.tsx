@@ -131,10 +131,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <span>
                   <strong className="block text-slate-300">Official Inquiries</strong>
                   <a
-                    href="mailto:support@startupjunction.in"
+                    href="mailto:support@startup-junction.in"
                     className="hover:text-white hover:underline underline-offset-2 break-all"
                   >
-                    support@startupjunction.in
+                    support@startup-junction.in
                   </a>
                 </span>
               </div>

@@ -14,7 +14,7 @@ const ACTIVITIES_KEY_PREFIX = 'sj_activities_';
 const REVIEW_DOC_ID = 'current';
 
 const GENERIC_FAILURE =
-  'We could not save that just now. Please try again in a moment — if it keeps failing, email support@startupjunction.in.';
+  'We could not save that just now. Please try again in a moment — if it keeps failing, email support@startup-junction.in.';
 
 const GENERIC_READ_FAILURE =
   'We could not load your applications just now. Please check your connection and try again.';

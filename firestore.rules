@@ -22,11 +22,11 @@ service cloud.firestore {
     // SECURITY: this list is committed to git. Keep it to shared, role-based
     // mailboxes you control as an organisation — never a personal address.
     //
-    // TODO(owner): replace 'admin@startupjunction.in' with the real admin
+    // TODO(owner): replace 'admin@startup-junction.in' with the real admin
     // mailbox and complete steps 1-4 above.
     // -------------------------------------------------------------------------
     function ADMIN_EMAILS() {
-      return ['admin@startupjunction.in'];
+      return ['admin@startup-junction.in'];
     }
 
     function isSignedIn() {

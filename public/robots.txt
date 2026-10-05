@@ -6,4 +6,4 @@ Allow: /
 Disallow: /admin
 Disallow: /thank-you
 
-Sitemap: https://startupjunction.in/sitemap.xml
+Sitemap: https://startup-junction.in/sitemap.xml

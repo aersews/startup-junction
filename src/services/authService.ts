@@ -25,7 +25,7 @@ interface StoredAdminSession {
  * then create /admins/{uid} in the Firebase console and remove the address
  * from both lists. Never use a personal mailbox here — this file is committed.
  */
-export const ADMIN_EMAILS = ['admin@startupjunction.in'];
+export const ADMIN_EMAILS = ['admin@startup-junction.in'];
 
 export function isAdminEmailAllowed(email: string | null | undefined): boolean {
   if (!email) return false;
