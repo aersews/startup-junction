@@ -108,7 +108,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   Privacy & Idea Confidentiality
                 </button>
               </li>
-              /*PLACEHOLDER*/ // trust & policy
               <li>
                 <button
                   onClick={() => {
@@ -149,7 +148,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
                 {/* TODO(owner): replace with the organisation's real postal address. */}
-                <span>{'{{REGISTERED_ADDRESS}}'}</span>
+                <span>{'Muzaffarpur, Bihar, India'}</span>
               </div>
             </div>
           </div>
